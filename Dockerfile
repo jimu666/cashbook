@@ -1,6 +1,8 @@
-FROM docker.1ms.run/library/node:20-alpine3.21 AS builder
-# 安装Alpine所需依赖
-RUN apk add --no-cache gcompat
+# 修改基础镜像为 ARMv7 兼容的 Alpine 版本
+FROM arm32v7/node:20-alpine3.21 AS builder
+
+# 安装 Alpine ARMv7 所需依赖
+RUN apk add --no-cache gcompat libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
@@ -29,14 +31,28 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM docker.1ms.run/library/node:20-alpine3.21 AS runner
+FROM arm32v7/node:20-alpine3.21 AS runner
+# 强制使用 ARMv7 的 Alpine 仓库源
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
 
+# 安装 ARMv7 专用兼容层
+RUN apk add --no-cache \
+    libc6-compat=2.38-r8 \
+    libgcc=12.2.1_git20231014-r4 \
+    libstdc++=12.2.1_git20231014-r4
+
+# 修复关键符号链接（ARMv7 专用路径）
+RUN mkdir -p /lib && \
+    ln -sf /usr/lib/libc.so /lib/ld-linux-armhf.so.3
+
+# 验证链接库
+RUN ls -l /lib/ld-linux-armhf.so.3 && \
+    ldd /app/prisma-engines/libquery_engine.so.node
 LABEL author.name="DingDangDog"
 LABEL author.email="dingdangdogx@outlook.com"
 LABEL project.name="cashbook"
 LABEL project.version="3"
-# 安装ARM架构的glibc兼容层
-RUN apk add --no-cache gcompat
 WORKDIR /app
 
 # 复制生产环境需要的文件
