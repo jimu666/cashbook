@@ -9,18 +9,13 @@ on:
 jobs:
   docker_build:
     runs-on: ubuntu-latest
-
+    env:
+       CUSTOM_VERSION: 4.001
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: main-sqlite
-
-      - name: Get version
-        id: get_version
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -30,4 +25,4 @@ jobs:
           # 仅构建不推送，镜像保留在构建缓存中
           docker buildx build \
             --platform linux/arm/v7 \
-            --tag dingdangdog/cashbook:${VERSION}-armv7-sqlite .
+            --tag cashbook:${CUSTOM_VERSION}-armv7-sqlite .
