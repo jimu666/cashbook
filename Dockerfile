@@ -78,7 +78,8 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 RUN chmod +x /app/prisma-engines/* && \
     chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限    
 #ENV PRISMA_CLI_BINARY_TARGET=linux-musl
-ENV PRISMA_CLI_BINARY_TARGET=custom
+#ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 # 验证步骤（更新版）
 RUN echo "验证动态链接器：" && \
