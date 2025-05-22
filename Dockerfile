@@ -20,10 +20,11 @@ ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 
 # 设置文件执行权限
-RUN chmod +x ./prisma-engines/*
+RUN chmod +x ./prisma-engines/* && \
+    chmod +x ./prisma-engines/*.so.node  # 如果.so文件需要执行权限
 COPY . .
 # 在builder阶段添加
-RUN file /app/prisma-engines/query-engine
+#RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
 RUN npx prisma generate
 RUN npm run build
@@ -53,8 +54,10 @@ ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 # 确保文件可执行权限
-RUN chmod +x /app/prisma-engines/*
-ENV PRISMA_CLI_BINARY_TARGET=linux-musl
+RUN chmod +x /app/prisma-engines/* && \
+    chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限
+#ENV PRISMA_CLI_BINARY_TARGET=linux-musl
+ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
