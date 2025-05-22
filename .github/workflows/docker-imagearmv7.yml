@@ -20,8 +20,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver-opts: |
-            image=moby/buildkit:master  # 使用最新buildkit解决潜在兼容性问题
+          driver: docker-container
+          # 移除有问题的自定义镜像配置
+          # 使用默认buildkit驱动
 
       - name: Build ARMv7 image
         run: |
@@ -29,7 +30,7 @@ jobs:
             --platform linux/arm/v7 \
             --tag cashbook:${{ env.CUSTOM_VERSION }}-armv7-sqlite \
             --output type=docker,dest=./image-armv7.tar \
-            .  # 构建上下文必须放在命令最后
+            .
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
