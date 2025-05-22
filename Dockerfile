@@ -52,7 +52,8 @@ ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 # 确保文件可执行权限
 RUN chmod +x /app/prisma-engines/*
-
+ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
 ENV NUXT_DATA_PATH="/app/data"
