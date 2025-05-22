@@ -1,8 +1,16 @@
-# 修改基础镜像为 ARMv7 兼容的 Alpine 版本
+# 使用 ARMv7 专用基础镜像
 FROM arm32v7/node:20-alpine3.21 AS builder
 
-# 安装 Alpine ARMv7 所需依赖
-RUN apk add --no-cache gcompat libc6-compat
+# 替换 Alpine 仓库源（避免 edge 导致兼容性问题）
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
+
+# 安装 ARMv7 依赖（不指定版本，避免冲突）
+RUN apk add --no-cache \
+    gcompat \
+    libc6-compat \
+    libstdc++
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -25,6 +33,8 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 RUN chmod +x ./prisma-engines/* && \
     chmod +x ./prisma-engines/*.so.node  # 如果.so文件需要执行权限
 COPY . .
+# 指定 Prisma 使用 ARMv7 引擎
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 # 在builder阶段添加
 #RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
@@ -32,20 +42,11 @@ RUN npx prisma generate
 RUN npm run build
 
 FROM arm32v7/node:20-alpine3.21 AS runner
-# 强制使用 ARMv7 的 Alpine 仓库源
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" > /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
 
-# 安装 ARMv7 专用兼容层
-RUN apk add --no-cache \
-    libc6-compat=2.38-r8 \
-    libgcc=12.2.1_git20231014-r4 \
-    libstdc++=12.2.1_git20231014-r4
-
-# 修复关键符号链接（ARMv7 专用路径）
+# 修复动态链接器路径（ARMv7 专用）
 RUN mkdir -p /lib && \
     ln -sf /usr/lib/libc.so /lib/ld-linux-armhf.so.3
-
+ENV LD_LIBRARY_PATH=/usr/lib:/lib
 # 验证链接库
 RUN ls -l /lib/ld-linux-armhf.so.3 && \
     ldd /app/prisma-engines/libquery_engine.so.node
