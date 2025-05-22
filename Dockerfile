@@ -1,6 +1,6 @@
 FROM docker.1ms.run/library/node:20-alpine3.21 AS builder
 # 安装Alpine所需依赖
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache gcompat
 WORKDIR /app
 
 COPY package*.json ./
@@ -22,6 +22,8 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 # 设置文件执行权限
 RUN chmod +x ./prisma-engines/*
 COPY . .
+# 在builder阶段添加
+RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
 RUN npx prisma generate
 RUN npm run build
@@ -32,8 +34,8 @@ LABEL author.name="DingDangDog"
 LABEL author.email="dingdangdogx@outlook.com"
 LABEL project.name="cashbook"
 LABEL project.version="3"
-# 必须添加的Alpine依赖
-RUN apk add --no-cache libc6-compat
+# 安装ARM架构的glibc兼容层
+RUN apk add --no-cache gcompat
 WORKDIR /app
 
 # 复制生产环境需要的文件
