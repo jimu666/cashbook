@@ -22,7 +22,7 @@ RUN npm install --ignore-scripts
 COPY prisma-engines /app/prisma-engines
 
 # 设置Prisma环境变量指向本地引擎
-ENV PRISMA_CLI_BINARY_TARGET=custom
+#ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
@@ -51,22 +51,14 @@ RUN apk add --no-cache gcompat libc6-compat && \
         mv /tmp/ld-linux-armhf.so.3 /lib/ && \
         chmod +x /lib/ld-linux-armhf.so.3; \
     fi
-
-# 设置库路径
-ENV LD_LIBRARY_PATH=/usr/lib:/lib
-
-# 验证步骤（更新版）
-RUN echo "验证动态链接器：" && \
-    ls -l /lib/ld-linux-armhf.so.3 && \
-    echo "验证库依赖关系：" && \
-    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败但继续构建"
-
 # 其余部分保持不变...
 LABEL author.name="DingDangDog"
 LABEL author.email="dingdangdogx@outlook.com"
 LABEL project.name="cashbook"
 LABEL project.version="3"
 WORKDIR /app
+# 设置库路径
+ENV LD_LIBRARY_PATH=/usr/lib:/lib
 
 # 复制生产环境需要的文件
 COPY --from=builder /app/.output/ ./
@@ -84,10 +76,16 @@ ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 # 确保文件可执行权限
 RUN chmod +x /app/prisma-engines/* && \
-    chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限
+    chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限    
 #ENV PRISMA_CLI_BINARY_TARGET=linux-musl
 ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+# 验证步骤（更新版）
+RUN echo "验证动态链接器：" && \
+    ls -l /lib/ld-linux-armhf.so.3 && \
+    echo "验证库依赖关系：" && \
+    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败但继续构建"
+
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
 ENV NUXT_DATA_PATH="/app/data"
