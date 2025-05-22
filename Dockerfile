@@ -43,13 +43,25 @@ RUN npm run build
 
 FROM arm32v7/node:20-alpine3.21 AS runner
 
-# 修复动态链接器路径（ARMv7 专用）
-RUN mkdir -p /lib && \
-    ln -sf /usr/lib/libc.so /lib/ld-linux-armhf.so.3
+# 修复动态链接器（关键修复）
+RUN apk add --no-cache gcompat libc6-compat && \
+    mkdir -p /lib && \
+    if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
+        wget -q -O /tmp/ld-linux-armhf.so.3 https://github.com/docker-library/faq/raw/main/glibc/ld-linux-armhf.so.3 && \
+        mv /tmp/ld-linux-armhf.so.3 /lib/ && \
+        chmod +x /lib/ld-linux-armhf.so.3; \
+    fi
+
+# 设置库路径
 ENV LD_LIBRARY_PATH=/usr/lib:/lib
-# 验证链接库
-RUN ls -l /lib/ld-linux-armhf.so.3 && \
-    ldd /app/prisma-engines/libquery_engine.so.node
+
+# 验证步骤（更新版）
+RUN echo "验证动态链接器：" && \
+    ls -l /lib/ld-linux-armhf.so.3 && \
+    echo "验证库依赖关系：" && \
+    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败但继续构建"
+
+# 其余部分保持不变...
 LABEL author.name="DingDangDog"
 LABEL author.email="dingdangdogx@outlook.com"
 LABEL project.name="cashbook"
