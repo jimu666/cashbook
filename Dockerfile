@@ -32,7 +32,8 @@ LABEL author.name="DingDangDog"
 LABEL author.email="dingdangdogx@outlook.com"
 LABEL project.name="cashbook"
 LABEL project.version="3"
-
+# 必须添加的Alpine依赖
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # 复制生产环境需要的文件
