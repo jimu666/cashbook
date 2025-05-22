@@ -18,12 +18,11 @@ ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 
-
 # 设置文件执行权限（修正路径）
 RUN chmod +x ./prisma-engines/schema-engine && \
     chmod +x ./prisma-engines/query-engine && \
     chmod +x ./prisma-engines/prisma-fmt
-    
+
 COPY . .
 # 生成Prisma Client
 RUN npx prisma generate
