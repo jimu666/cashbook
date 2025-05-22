@@ -44,6 +44,14 @@ COPY --from=builder /app/.output/server/node_modules/.prisma/ ./.prisma/
 COPY ./prisma/ ./prisma/
 COPY ./docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
+# 从 builder 复制预编译的引擎
+COPY --from=builder /app/prisma-engines /app/prisma-engines
+# 设置生产环境变量指向这些引擎
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
+ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
+# 确保文件可执行权限
+RUN chmod +x /app/prisma-engines/*
 
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
