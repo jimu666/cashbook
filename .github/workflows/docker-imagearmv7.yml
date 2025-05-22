@@ -26,3 +26,9 @@ jobs:
           docker buildx build \
             --platform linux/arm/v7 \
             --tag cashbook:${CUSTOM_VERSION}-armv7-sqlite .
+            --output type=docker,dest=image-armv7.tar .  # 将镜像保存为 tar 文件
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armv7-docker-image
+          path: image-armv7.tar
