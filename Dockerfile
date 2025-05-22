@@ -1,56 +1,66 @@
-FROM node:20-alpine3.21 AS builder
+# 使用ARMv7兼容的Alpine基础镜像
+FROM arm32v7/node:20-alpine3.21 AS builder
+
+# 安装ARM兼容依赖
+RUN apk add --no-cache \
+    gcompat \
+    libc6-compat \
+    openssl3
 
 WORKDIR /app
-
 COPY package*.json ./
-
-# 安装依赖并生成 Prisma Client
+# 正常安装依赖（移除--ignore-scripts）
 RUN npm install
 
-COPY . .
+# 复制预编译的ARMv7引擎
+COPY prisma-engines /app/prisma-engines
 
-RUN npx prisma generate 
+# 显式设置权限（ARM设备可能需要不同权限）
+RUN chmod 755 /app/prisma-engines/*
+
+# 验证引擎架构
+RUN file /app/prisma-engines/query-engine | grep "ARM, EABI5"
+
+# 生成Prisma Client
+RUN npx prisma generate
+
+# 构建应用
 RUN npm run build
-# RUN npm run prisma:build
 
-FROM node:20-alpine3.21 AS runner
+# Runner阶段
+FROM arm32v7/node:20-alpine3.21 AS runner
 
-LABEL author.name="DingDangDog"
-LABEL author.email="dingdangdogx@outlook.com"
-LABEL project.name="cashbook"
-LABEL project.version="3"
+# 保持目标一致
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-gnueabihf
+
+RUN apk add --no-cache \
+    gcompat \
+    libc6-compat \
+    openssl3
 
 WORKDIR /app
 
-# 复制生产环境需要的文件
-COPY --from=builder /app/.output/ ./ 
-COPY --from=builder /app/.output/server/node_modules/ ./node_modules/
-COPY --from=builder /app/.output/server/node_modules/.prisma/ ./.prisma/
-COPY ./prisma/ ./prisma/
-COPY ./docker/entrypoint.sh ./entrypoint.sh
-RUN chmod +x entrypoint.sh
+# 精简复制文件
+COPY --from=builder /app/.output/ ./
+COPY --from=builder /app/node_modules/ ./node_modules/
+COPY --from=builder /app/.prisma/ ./.prisma/
+COPY --from=builder /app/prisma-engines/ /app/prisma-engines/
 
-# RUN ls
+# 显式设置环境变量
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
+ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 
-# 预装prisma，可以提升容器启动速度，但镜像体积会大很多
-RUN npm install -g prisma@6.2.1
+# 最终权限检查
+RUN chmod 755 /app/prisma-engines/* && \
+    ls -l /app/prisma-engines/
 
-ENV DATABASE_URL="postgresql://postgres:123456@localhost:5432/cashbook?schema=public"
-
-ENV NUXT_APP_VERSION="4.1.5"
-ENV NUXT_DATA_PATH="/app/data"
-
-ENV NUXT_AUTH_SECRET="auth123"
-
-ENV NUXT_ADMIN_USERNAME="admin"
-# 密码是加密后的，加密方法见 server/utils 中的 test.js 或 common.ts
-ENV NUXT_ADMIN_PASSWORD="fb35e9343a1c095ce1c1d1eb6973dc570953159441c3ee315ecfefb6ed05f4cc"
-
-ENV PORT="9090"
+# 生产环境变量
+ENV DATABASE_URL="file:/app/data/db/cashbook.db"
+ENV NUXT_APP_VERSION="4.1.3"
+# ...其他环境变量...
 
 VOLUME /app/data/
-
 EXPOSE 9090
-# ENTRYPOINT [ "sh","entrypoint.sh" ]
 ENTRYPOINT ["/app/entrypoint.sh"]
-# CMD ["/app/entrypoint.sh"]
