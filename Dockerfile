@@ -1,5 +1,6 @@
 FROM docker.1ms.run/library/node:20-alpine3.21 AS builder
-
+# 安装Alpine所需依赖
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package*.json ./
@@ -18,11 +19,8 @@ ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 
-# 设置文件执行权限（修正路径）
-RUN chmod +x ./prisma-engines/schema-engine && \
-    chmod +x ./prisma-engines/query-engine && \
-    chmod +x ./prisma-engines/prisma-fmt
-
+# 设置文件执行权限
+RUN chmod +x ./prisma-engines/*
 COPY . .
 # 生成Prisma Client
 RUN npx prisma generate
@@ -47,12 +45,13 @@ RUN chmod +x entrypoint.sh
 # 从 builder 复制预编译的引擎
 COPY --from=builder /app/prisma-engines /app/prisma-engines
 # 设置生产环境变量指向这些引擎
+ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 # 确保文件可执行权限
 RUN chmod +x /app/prisma-engines/*
-ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_CLI_BINARY_TARGET=linux-musl
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
