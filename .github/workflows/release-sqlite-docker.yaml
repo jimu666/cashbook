@@ -1,13 +1,13 @@
-name: Release-SQLite-Docker
+name: Build-SQLite-Docker-Only
 
 on:
   push:
     tags:
       - v*.*.*
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   docker_build:
-    environment: docker_hub
     runs-on: ubuntu-latest
 
     steps:
@@ -19,35 +19,15 @@ jobs:
       - name: Get version
         id: get_version
         run: |
-          VERSION=$(git describe --tags --always --match 'v*' | sed -n 's|^v\([0-9]*\.[0-9]*\.[0-9]*\)\(-.*\)\{0,1\}|\1|p')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Store version as an environment variable
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build Docker image
-        run: docker build -t dingdangdog/cashbook:${VERSION}-sqlite -t dingdangdog/cashbook:latest-sqlite .
-
-      - name: Push Docker image
-        run: |
-          docker push dingdangdog/cashbook:${VERSION}-sqlite
-          docker push dingdangdog/cashbook:latest-sqlite
-
-      # 设置 Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 构建 arm64 镜像并推送
-      - name: Build and push arm64 image
+      - name: Build ARMv7 image (no push)
         run: |
+          # 仅构建不推送，镜像保留在构建缓存中
           docker buildx build \
-            --platform linux/arm64 \
-            --tag dingdangdog/cashbook:${VERSION}-arm64-sqlite \
-            --tag dingdangdog/cashbook:latest-arm64-sqlite \
-            --push .
-
-      - name: Clean up Docker images
-        run: docker system prune -af 
+            --platform linux/arm/v7 \
+            --tag dingdangdog/cashbook:${VERSION}-armv7-sqlite .
