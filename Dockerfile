@@ -35,12 +35,6 @@ RUN chmod +x ./prisma-engines/* && \
 COPY . .
 # 指定 Prisma 使用 ARMv7 引擎
 ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
-# 严格架构验证
-RUN file ./prisma-engines/query-engine
-RUN file ./prisma-engines/query-engine | grep -q 'ELF 32-bit LSB.*ARM' || { \
-  echo "[错误] 检测到无效的Prisma引擎架构！当前文件信息："; \
-  exit 1; \
-}
 # 在builder阶段添加
 #RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
@@ -91,7 +85,7 @@ ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 RUN echo "验证动态链接器：" && \
     ls -l /lib/ld-linux-armhf.so.3 && \
     echo "验证库依赖关系：" && \
-    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败但继续构建"
+    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出" && exit 1;
 
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
