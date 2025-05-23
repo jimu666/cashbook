@@ -28,7 +28,7 @@ COPY . .
 RUN npx prisma generate
 
 # 构建 Nuxt 应用
-RUN npm run build && ls -la /app/.output
+RUN npm run build && ls -la /app
 
 # ===== 运行阶段 =====
 FROM --platform=linux/arm/v7 node:18-slim AS runner
