@@ -1,8 +1,8 @@
 # 使用 ARMv7 专用基础镜像 # 使用Debian获得更好的glibc兼容性
 FROM arm32v7/node:20-bullseye AS builder 
 # 替换 Alpine 仓库源（避免 edge 导致兼容性问题）
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
+#RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
+#    echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
 
 # 安装 ARMv7 依赖（不指定版本，避免冲突）
 RUN apk add --no-cache \
