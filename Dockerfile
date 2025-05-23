@@ -47,9 +47,7 @@ FROM node:18-alpine3.18 AS runner
 RUN apk add --no-cache gcompat libc6-compat && \
     mkdir -p /lib && \
     if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
-        wget -q -O /tmp/ld-linux-armhf.so.3 https://github.com/docker-library/faq/raw/main/glibc/ld-linux-armhf.so.3 && \
-        mv /tmp/ld-linux-armhf.so.3 /lib/ && \
-        chmod +x /lib/ld-linux-armhf.so.3; \
+       echo "ld-linux-armhf.so.3不存在" && exit 1;
     fi
 # 其余部分保持不变...
 LABEL author.name="DingDangDog"
