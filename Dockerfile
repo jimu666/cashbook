@@ -56,13 +56,15 @@ ENV NUXT_APP_VERSION="4.1.3"
 ENV NUXT_DATA_PATH="/app/data"
 ENV PORT="9090"
 
-# 拷贝构建产物和依赖
-COPY --from=builder /app/.output/ ./
+# 拷贝构建产物
+COPY --from=builder /app/.output/ ./          # Nuxt 输出
 COPY --from=builder /app/node_modules/ ./node_modules/
 COPY --from=builder /app/prisma/ ./prisma/
-COPY --from=builder /app/.prisma/ ./.prisma/
+# 删除以下这行，避免报错
+# COPY --from=builder /app/.prisma/ ./.prisma/
 COPY --from=builder /app/prisma-engines/ /app/prisma-engines/
 COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+
 
 # 设置执行权限
 RUN chmod +x ./entrypoint.sh && chmod +x /app/prisma-engines/*
