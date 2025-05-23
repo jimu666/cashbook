@@ -61,7 +61,7 @@ COPY --from=builder /app/node_modules/ ./node_modules/
 COPY --from=builder /app/.prisma/ ./.prisma/
 COPY --from=builder /app/prisma/ ./prisma/
 COPY --from=builder /app/prisma-engines/ /app/prisma-engines/
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+COPY --from=builder /app/docker/entrypoint.sh ./entrypoint.sh
 
 RUN chmod +x entrypoint.sh && chmod +x /app/prisma-engines/*
 
