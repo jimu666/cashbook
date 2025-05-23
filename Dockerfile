@@ -1,5 +1,5 @@
 # 使用 ARMv7 专用基础镜像
-FROM arm32v7/node:20-alpine3.21 AS builder
+FROM arm32v7/node:20-bullseye AS builder  # 使用Debian获得更好的glibc兼容性
 
 # 替换 Alpine 仓库源（避免 edge 导致兼容性问题）
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
@@ -38,11 +38,17 @@ ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 # 在builder阶段添加
 #RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
+# 在builder阶段验证引擎架构（严格模式）
+RUN file ./prisma-engines/query-engine | grep -q 'ELF 32-bit LSB.*ARM' || { \
+  echo "[错误] 检测到无效的Prisma引擎架构！当前文件信息："; \
+  file /app/prisma-engines/query-engine; \
+  exit 1; \
+}
 RUN npx prisma generate
 RUN npm run build
 
 FROM arm32v7/node:20-alpine3.21 AS runner
-
+RUN apk add --no-cache gcompat libc6-compat libstdc++ openssl
 # 修复动态链接器（关键修复）
 RUN apk add --no-cache gcompat libc6-compat && \
     mkdir -p /lib && \
@@ -81,6 +87,14 @@ RUN chmod +x /app/prisma-engines/* && \
 #ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+# 在runner阶段验证引擎可执行性（严格模式）
+RUN /app/prisma-engines/query-engine --version >/dev/null 2>&1 || { \
+  echo "[错误] Prisma引擎执行测试失败！可能原因："; \
+  echo "1. 文件权限问题（尝试: ls -l /app/prisma-engines）"; \
+  echo "2. 动态链接库缺失（尝试: ldd /app/prisma-engines/query-engine）"; \
+  echo "3. 架构不兼容（确认是ARMv7编译的二进制）"; \
+  exit 1; \
+}
 # 验证步骤（更新版）
 RUN echo "验证动态链接器：" && \
     ls -l /lib/ld-linux-armhf.so.3 && \
