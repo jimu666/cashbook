@@ -1,5 +1,5 @@
 .nuxt/
-.output/
+#.output/
 .github/
 .git/
 
