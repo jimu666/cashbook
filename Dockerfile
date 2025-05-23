@@ -23,8 +23,8 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 ENV PRISMA_CLIENT_ENGINE_TYPE=binary
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
-# 生成 Prisma 客户端（使用 5.1.4）
-RUN npx prisma@5.1.4 generate
+# 生成 Prisma 客户端（使用 5.4.1）
+RUN npx prisma@5.4.1 generate
 
 # 构建 Nuxt 应用
 RUN npm run build
