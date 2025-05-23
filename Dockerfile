@@ -55,12 +55,13 @@ ENV NUXT_APP_VERSION="4.1.3"
 ENV NUXT_DATA_PATH="/app/data"
 ENV PORT="9090"
 
-# 拷贝运行所需产物
-COPY --from=builder /app/server /app/server
-COPY --from=builder /app/prisma /app/prisma
-COPY --from=builder /app/prisma-engines /app/prisma-engines
-COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
 
+# 复制生产环境需要的文件
+COPY --from=builder /app/.output /app/.output
+COPY --from=builder /app/.output/server/node_modules /app/node_modules
+COPY --from=builder /app/.output/server/node_modules/.prisma /app/.prisma
+COPY --from=builder /app/prisma /app/prisma
+COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
 
 VOLUME /app/data
