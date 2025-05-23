@@ -22,7 +22,7 @@ RUN npm install --ignore-scripts
 COPY prisma-engines /app/prisma-engines
 
 # 设置Prisma环境变量指向本地引擎
-#ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
@@ -34,7 +34,7 @@ RUN chmod +x ./prisma-engines/* && \
     chmod +x ./prisma-engines/*.so.node  # 如果.so文件需要执行权限
 COPY . .
 # 指定 Prisma 使用 ARMv7 引擎
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+#ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 # 在builder阶段添加
 #RUN file /app/prisma-engines/query-engine
 # 生成Prisma Client
@@ -78,8 +78,8 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 RUN chmod +x /app/prisma-engines/* && \
     chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限    
 #ENV PRISMA_CLI_BINARY_TARGET=linux-musl
-#ENV PRISMA_CLI_BINARY_TARGET=custom
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_CLI_BINARY_TARGET=custom
+#ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 # 验证步骤（更新版）
 RUN echo "验证动态链接器：" && \
