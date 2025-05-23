@@ -1,15 +1,15 @@
 # 使用 ARMv7 专用基础镜像
-FROM arm32v7/node:20-alpine3.21 AS builder
+FROM node:18-alpine3.18 as builder
 
 # 替换 Alpine 仓库源（避免 edge 导致兼容性问题）
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
     echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
 
-# 安装 ARMv7 依赖（不指定版本，避免冲突）
+# 安装glibc兼容层（解决符号缺失问题）
 RUN apk add --no-cache \
     gcompat \
     libc6-compat \
-    libstdc++
+    openssl3
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM arm32v7/node:20-alpine3.21 AS runner
+FROM node:18-alpine3.18 AS runner
 
 # 修复动态链接器（关键修复）
 RUN apk add --no-cache gcompat libc6-compat && \
@@ -68,6 +68,11 @@ COPY ./docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 # 从 builder 复制预编译的引擎
 COPY --from=builder /app/prisma-engines /app/prisma-engines
+# 强制指定ARMv7架构配置
+ENV PRISMA_HIDE_CHANGELOG=1
+ENV PRISMA_HIDE_UPDATE_MESSAGE=1
+ENV PRISMA_CLIENT_ENGINE_TYPE=binary
+ENV PRISMA_QUERY_ENGINE_BINARY_TARGET=linux-arm-openssl-3.0.x
 # 设置生产环境变量指向这些引擎
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
