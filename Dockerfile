@@ -45,8 +45,8 @@ FROM arm32v7/node:20-alpine3.21 AS runner
 
 # 修复动态链接器（关键修复）
 RUN apk add --no-cache gcompat libc6-compat && \
-    mkdir -p /lib && \
-    if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
+    mkdir -p /libs && \
+    if [ ! -f /libs/ld-linux-armhf.so.3 ]; then \
         wget -q -O /tmp/ld-linux-armhf.so.3 https://github.com/docker-library/faq/raw/main/glibc/ld-linux-armhf.so.3 && \
         mv /tmp/ld-linux-armhf.so.3 /libs/ && \
         chmod +x /libs/ld-linux-armhf.so.3; \
