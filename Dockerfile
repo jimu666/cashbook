@@ -11,7 +11,6 @@ COPY package*.json ./
 
 # 安装依赖（跳过 Prisma 安装脚本）
 RUN npm install --ignore-scripts
-
 # 拷贝 Prisma 引擎（你预编译的 5.4.1 引擎）
 COPY prisma-engines/ /app/prisma-engines/
 
