@@ -47,7 +47,7 @@ FROM node:18-alpine3.18 AS runner
 RUN apk add --no-cache gcompat libc6-compat && \
     mkdir -p /lib && \
     if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
-       echo "ld-linux-armhf.so.3不存在" && exit 1;
+       echo "ld-linux-armhf.so.3不存在" && exit 1; \
     fi
 # 其余部分保持不变...
 LABEL author.name="DingDangDog"
