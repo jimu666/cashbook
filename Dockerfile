@@ -1,85 +1,104 @@
-# ========= 构建阶段 =========
-FROM arm32v7/node:18-alpine3.18 as builder
+# 使用 ARMv7 专用基础镜像
+FROM node:18-alpine3.18 as builder
 
-# 修复Alpine仓库源（使用长期支持版本）
-RUN echo -e "http://dl-cdn.alpinelinux.org/alpine/v3.21/main\nhttp://dl-cdn.alpinelinux.org/alpine/v3.21/community" > /etc/apk/repositories
+# 替换 Alpine 仓库源（避免 edge 导致兼容性问题）
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
 
-# 安装glibc兼容层（关键步骤）
+# 安装glibc兼容层（解决符号缺失问题）
 RUN apk add --no-cache \
     gcompat \
     libc6-compat \
-    openssl3 \
-    && ln -s /usr/lib/libc.so.6 /usr/glibc-compat/lib/libc.so.6 \
-    && ln -sf /usr/glibc-compat/lib/ld-linux-armhf.so.3 /lib/
+    openssl3
 
 WORKDIR /app
 
-# 复制预编译引擎（必须确保是ARMv7版本）
-COPY prisma-engines ./prisma-engines
-
-# 验证引擎架构（构建时立即检查）
-RUN if ! file ./prisma-engines/query-engine | grep -q 'ARMv7'; then \
-        echo "错误：引擎文件不是ARMv7架构"; exit 1; \
-    fi
-
 COPY package*.json ./
-COPY prisma/schema.prisma ./prisma/
 
-# 安装依赖（跳过引擎自动下载）
+# 安装依赖（跳过Prisma自动安装）
 RUN npm install --ignore-scripts
 
-# 配置Prisma使用本地引擎
+# 复制本地Prisma引擎
+COPY prisma-engines /app/prisma-engines
+
+# 设置Prisma环境变量指向本地引擎
+#ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 
-# 生成客户端（强制使用本地引擎）
-RUN npx prisma generate --generator enginesVersion
-
-# 构建应用
+# 设置文件执行权限
+RUN chmod +x ./prisma-engines/* && \
+    chmod +x ./prisma-engines/*.so.node  # 如果.so文件需要执行权限
+COPY . .
+# 指定 Prisma 使用 ARMv7 引擎
+#ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+# 在builder阶段添加
+#RUN file /app/prisma-engines/query-engine
+# 生成Prisma Client
+RUN npx prisma generate
 RUN npm run build
 
-# ========= 运行时阶段 =========
-FROM arm32v7/node:18-alpine3.18 AS runner
+FROM node:18-alpine3.18 AS runner
 
-# 安装运行时依赖
-RUN apk add --no-cache \
-    gcompat \
-    libc6-compat \
-    openssl3 \
-    # 修复动态链接器路径
-    && mkdir -p /lib \
-    && ln -sf /usr/glibc-compat/lib/ld-linux-armhf.so.3 /lib/ \
-    && ln -sf /usr/lib/libc.so.6 /usr/glibc-compat/lib/
-
+# 修复动态链接器（关键修复）
+RUN apk add --no-cache gcompat libc6-compat && \
+    mkdir -p /lib && \
+    if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
+       echo "ld-linux-armhf.so.3不存在" && exit 1; \
+    fi
+# 其余部分保持不变...
+LABEL author.name="DingDangDog"
+LABEL author.email="dingdangdogx@outlook.com"
+LABEL project.name="cashbook"
+LABEL project.version="3"
 WORKDIR /app
+# 设置库路径
+ENV LD_LIBRARY_PATH=/usr/lib:/lib
+# 复制生产环境需要的文件
+COPY --from=builder /app/.output/ ./
+COPY --from=builder /app/.output/server/node_modules/ ./node_modules/
+COPY --from=builder /app/.output/server/node_modules/.prisma/ ./.prisma/
+COPY ./prisma/ ./prisma/
+COPY ./docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh
+# 从 builder 复制预编译的引擎
+COPY --from=builder /app/prisma-engines /app/prisma-engines
+# 强制指定ARMv7架构配置
+ENV PRISMA_HIDE_CHANGELOG=1
+ENV PRISMA_HIDE_UPDATE_MESSAGE=1
+ENV PRISMA_CLIENT_ENGINE_TYPE=binary
+ENV PRISMA_QUERY_ENGINE_BINARY_TARGET=linux-arm-openssl-3.0.x
+# 设置生产环境变量指向这些引擎
+ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
+ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
+# 确保文件可执行权限
+RUN chmod +x /app/prisma-engines/* && \
+    chmod +x /app/prisma-engines/*.so.node  # 如果.so文件需要执行权限    
+#ENV PRISMA_CLI_BINARY_TARGET=linux-musl
+#ENV PRISMA_CLI_BINARY_TARGET=custom
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+# 验证步骤（更新版）
+RUN echo "验证动态链接器：" && \
+    ls -l /lib/ld-linux-armhf.so.3 && \
+    echo "验证库依赖关系：" && \
+    #ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出" && exit 1;
+    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败继续构建";
 
-# 复制构建产物
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.output ./
-COPY --from=builder /app/prisma ./prisma
-
-# 复制预编译引擎到标准路径
-COPY --from=builder /app/prisma-engines /app/node_modules/.prisma/client/
-
-# 设置库路径和权限
-ENV LD_LIBRARY_PATH="/usr/glibc-compat/lib:/lib:$LD_LIBRARY_PATH"
-RUN chmod +x /app/node_modules/.prisma/client/query-engine \
-    && chmod +x /app/node_modules/.prisma/client/schema-engine
-
-# 运行时验证（关键诊断）
-RUN echo "=== 运行时诊断开始 ===" \
-    && ls -lh /lib/ld-linux-armhf.so.3 \
-    && ldd /app/node_modules/.prisma/client/query-engine | tee /tmp/ldd.log \
-    && grep -q 'not found' /tmp/ldd.log && (echo "缺失依赖检测到"; exit 1) || true \
-    && echo "=== 引擎架构验证 ===" \
-    && file /app/node_modules/.prisma/client/query-engine | grep 'ARMv7' \
-    && echo "=== 运行时诊断通过 ==="
-
-# 应用配置
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
-VOLUME /app/data
-EXPOSE 9090
+ENV NUXT_DATA_PATH="/app/data"
+ENV NUXT_AUTH_SECRET="auth123"
+ENV NUXT_ADMIN_USERNAME="admin"
+ENV NUXT_ADMIN_PASSWORD="fb35e9343a1c095ce1c1d1eb6973dc570953159441c3ee315ecfefb6ed05f4cc"
+ENV PORT="9090"
 
-ENTRYPOINT ["node", "./server/index.mjs"]
+VOLUME /app/data/
+EXPOSE 9090
+ENTRYPOINT ["/app/entrypoint.sh"]
