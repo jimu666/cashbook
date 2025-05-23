@@ -9,7 +9,9 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositori
 RUN apk add --no-cache \
     gcompat \
     libc6-compat \
-    openssl3
+    openssl3 \
+    openssl1.1-compat \
+    --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 WORKDIR /app
 
