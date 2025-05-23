@@ -11,7 +11,7 @@ RUN apk add --no-cache \
     libc6-compat \
     openssl3 \
     openssl1.1-compat \
-    --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+    --repository=http://dl-cdn.alpinelinux.org/alpine/v3.18/community
 
 WORKDIR /app
 
