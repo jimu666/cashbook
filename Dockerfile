@@ -57,7 +57,7 @@ ENV PORT="9090"
 
 
 # 复制生产环境需要的文件
-COPY --from=builder /app/.output /app/.output
+COPY --from=builder /app/.output/server /app/server
 COPY --from=builder /app/.output/server/node_modules /app/node_modules
 COPY --from=builder /app/.output/server/node_modules/.prisma /app/.prisma
 COPY --from=builder /app/prisma /app/prisma
