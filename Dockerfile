@@ -41,7 +41,7 @@ ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 # 在builder阶段验证引擎架构（严格模式）
 RUN file ./prisma-engines/query-engine | grep -q 'ELF 32-bit LSB.*ARM' || { \
   echo "[错误] 检测到无效的Prisma引擎架构！当前文件信息："; \
-  file /app/prisma-engines/query-engine; \
+  file ./prisma-engines/query-engine; \
   exit 1; \
 }
 RUN npx prisma generate
