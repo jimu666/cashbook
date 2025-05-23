@@ -1,10 +1,11 @@
 # 使用 ARMv7 专用基础镜像（Debian Bullseye）
 FROM arm32v7/node:20-bullseye AS builder 
-# 安装 ARMv7 依赖（Debian 包管理器）
+
+# 安装 ARMv7 依赖（Debian 包管理器）  # ✅ 反斜杠后无空格
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgcompat0 \  # Debian 对应 gcompat
-    libc6-dev \    # Debian 对应 libc6-compat（提供 glibc 兼容）
-    libstdc++6     # 标准 C++ 库
+    libgcompat0 \
+    libc6-dev \
+    libstdc++6
 WORKDIR /app
 
 COPY package*.json ./
