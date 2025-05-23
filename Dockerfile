@@ -36,9 +36,9 @@ COPY . .
 # 指定 Prisma 使用 ARMv7 引擎
 ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 # 严格架构验证
+RUN file ./prisma-engines/query-engine;
 RUN file ./prisma-engines/query-engine | grep -q 'ELF 32-bit LSB.*ARM' || { \
   echo "[错误] 检测到无效的Prisma引擎架构！当前文件信息："; \
-  file ./prisma-engines/query-engine; \
   exit 1; \
 }
 # 在builder阶段添加
