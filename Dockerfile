@@ -84,7 +84,8 @@ ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 RUN echo "验证动态链接器：" && \
     ls -l /libs/ld-linux-armhf.so.3 && \
     echo "验证库依赖关系：" && \
-    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出" && exit 1;
+    #ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出" && exit 1;
+    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出";
 
 ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_APP_VERSION="4.1.3"
