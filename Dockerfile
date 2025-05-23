@@ -62,6 +62,7 @@ COPY --from=builder /app/.output/server/node_modules /app/node_modules
 COPY --from=builder /app/.output/server/node_modules/.prisma /app/.prisma
 COPY --from=builder /app/prisma /app/prisma
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=builder /app/prisma-engines /app/prisma-engines
 RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
 
 VOLUME /app/data
