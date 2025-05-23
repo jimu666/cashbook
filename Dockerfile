@@ -12,6 +12,7 @@ RUN npm install --ignore-scripts
 
 # 复制 Prisma 引擎与项目源码
 COPY prisma-engines/ /app/prisma-engines/
+COPY docker/entrypoint.sh /app/entrypoint.sh
 COPY . .
 
 # 设置环境变量，指向本地引擎路径
