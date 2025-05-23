@@ -13,6 +13,7 @@ COPY package*.json ./
 RUN npm install --ignore-scripts
 # 拷贝 Prisma 引擎（你预编译的 5.4.1 引擎）
 COPY prisma-engines/ /app/prisma-engines/
+COPY docker/entrypoint.sh ./entrypoint.sh
 
 # 设置 Prisma 使用本地引擎
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
@@ -61,7 +62,7 @@ COPY --from=builder /app/node_modules/ ./node_modules/
 COPY --from=builder /app/.prisma/ ./.prisma/
 COPY --from=builder /app/prisma/ ./prisma/
 COPY --from=builder /app/prisma-engines/ /app/prisma-engines/
-COPY --from=builder /app/docker/entrypoint.sh ./entrypoint.sh
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
 RUN chmod +x entrypoint.sh && chmod +x /app/prisma-engines/*
 
