@@ -1,5 +1,5 @@
 # ===== 构建阶段 =====
-FROM --platform=linux/arm/v7 node:20-alpine3.21 AS builder
+FROM --platform=linux/arm/v7 node:18-slim AS builder
 # 安装系统依赖
 RUN apt-get update && apt-get install -y openssl ca-certificates
 
@@ -30,7 +30,7 @@ RUN npx prisma generate
 RUN npm run build && ls -la /app/.output
 
 # ===== 运行阶段 =====
-FROM --platform=linux/arm/v7 node:20-alpine3.21 AS runner
+FROM --platform=linux/arm/v7 node:18-slim AS runner
 
 # 安装运行依赖
 RUN apt-get update && apt-get install -y openssl ca-certificates && apt-get clean
