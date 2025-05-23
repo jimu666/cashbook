@@ -48,8 +48,8 @@ RUN apk add --no-cache gcompat libc6-compat && \
     mkdir -p /lib && \
     if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
         wget -q -O /tmp/ld-linux-armhf.so.3 https://github.com/docker-library/faq/raw/main/glibc/ld-linux-armhf.so.3 && \
-        mv /tmp/ld-linux-armhf.so.3 /lib/ && \
-        chmod +x /lib/ld-linux-armhf.so.3; \
+        mv /tmp/ld-linux-armhf.so.3 /libs/ && \
+        chmod +x /libs/ld-linux-armhf.so.3; \
     fi
 # 其余部分保持不变...
 LABEL author.name="DingDangDog"
@@ -58,8 +58,7 @@ LABEL project.name="cashbook"
 LABEL project.version="3"
 WORKDIR /app
 # 设置库路径
-ENV LD_LIBRARY_PATH=/usr/lib:/lib
-
+ENV LD_LIBRARY_PATH=/usr/lib:/lib:/libs
 # 复制生产环境需要的文件
 COPY --from=builder /app/.output/ ./
 COPY --from=builder /app/.output/server/node_modules/ ./node_modules/
@@ -83,7 +82,7 @@ ENV PRISMA_CLI_BINARY_TARGET=custom
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 # 验证步骤（更新版）
 RUN echo "验证动态链接器：" && \
-    ls -l /lib/ld-linux-armhf.so.3 && \
+    ls -l /libs/ld-linux-armhf.so.3 && \
     echo "验证库依赖关系：" && \
     ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd验证失败退出" && exit 1;
 
