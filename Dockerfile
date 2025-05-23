@@ -1,100 +1,79 @@
-# ========= Builder 阶段 =========
-FROM node:18-alpine3.18 AS builder
+# ===== 构建阶段 =====
+FROM --platform=linux/arm/v7 node:18-slim AS builder
 
-# 使用稳定的 Alpine 仓库源，避免 edge 包兼容性问题
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/main" > /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
-
-# 安装必要的兼容层（gcompat 处理 glibc 符号）
-RUN apk add --no-cache \
-    gcompat \
-    libc6-compat \
-    openssl3 \
-    openssl1.1-compat \
-    --repository=http://dl-cdn.alpinelinux.org/alpine/v3.18/community
+# 安装依赖
+RUN apt-get update && apt-get install -y openssl ca-certificates
 
 WORKDIR /app
 
-# 复制依赖文件并跳过 Prisma 安装
+# 拷贝依赖清单
 COPY package*.json ./
+
+# 安装依赖（跳过 Prisma 安装脚本）
 RUN npm install --ignore-scripts
 
-# 复制本地预编译的 Prisma 引擎
-COPY prisma-engines /app/prisma-engines
+# 拷贝 Prisma 引擎（你预编译的 5.4.1 引擎）
+COPY prisma-engines/ /app/prisma-engines/
+
+# 设置 Prisma 使用本地引擎
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
+ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
+
+# 设置权限
 RUN chmod +x /app/prisma-engines/*
 
-# 设置环境变量用于 npx prisma generate
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x \
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
-    PRISMA_CLIENT_ENGINE_TYPE=binary \
-    PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node \
-    PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine \
-    PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine \
-    PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
-
-# 复制项目文件并生成 Prisma Client
+# 拷贝完整源代码
 COPY . .
+
+# 生成 Prisma Client
 RUN npx prisma generate
+
+# 构建应用（如 Nuxt 或其他 Node 工程）
 RUN npm run build
 
-# ========= Runner 阶段 =========
-FROM node:18-alpine3.18 AS runner
+# ===== 运行阶段 =====
+FROM --platform=linux/arm/v7 node:18-slim AS runner
 
-# 安装兼容层并验证动态链接器是否存在
-RUN apk add --no-cache gcompat libc6-compat && \
-    mkdir -p /lib && \
-    if [ ! -f /lib/ld-linux-armhf.so.3 ]; then \
-       echo "错误：ld-linux-armhf.so.3 不存在" && exit 1; \
-    fi
+# 安装运行依赖
+RUN apt-get update && apt-get install -y openssl ca-certificates && apt-get clean
 
+# 工作目录
 WORKDIR /app
 
-LABEL author.name="DingDangDog" \
-      author.email="dingdangdogx@outlook.com" \
-      project.name="cashbook" \
-      project.version="3"
+# 环境变量配置
+ENV LD_LIBRARY_PATH=/lib:/usr/lib
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
+ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
+ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
+ENV PRISMA_CLIENT_ENGINE_TYPE=binary
+ENV PRISMA_HIDE_CHANGELOG=1
+ENV PRISMA_HIDE_UPDATE_MESSAGE=1
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 
-# 设置共享库搜索路径
-ENV LD_LIBRARY_PATH=/usr/lib:/lib
-
-# 复制构建产物
+# 拷贝构建产物
 COPY --from=builder /app/.output/ ./
-COPY --from=builder /app/.output/server/node_modules/ ./node_modules/
-COPY --from=builder /app/.output/server/node_modules/.prisma/ ./.prisma/
-COPY ./prisma/ ./prisma/
-COPY ./docker/entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
+COPY --from=builder /app/node_modules/ ./node_modules/
+COPY --from=builder /app/.prisma/ ./.prisma/
+COPY --from=builder /app/prisma/ ./prisma/
+COPY --from=builder /app/prisma-engines/ /app/prisma-engines/
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
-# 复制 Prisma 引擎并验证文件
-COPY --from=builder /app/prisma-engines /app/prisma-engines
-RUN chmod +x /app/prisma-engines/* && \
-    test -f /app/prisma-engines/query-engine || (echo "query-engine 缺失" && exit 1)
+RUN chmod +x entrypoint.sh && chmod +x /app/prisma-engines/*
 
-# 设置 Prisma 环境变量
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x \
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
-    PRISMA_CLIENT_ENGINE_TYPE=binary \
-    PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine \
-    PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node \
-    PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine \
-    PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt \
-    PRISMA_HIDE_CHANGELOG=1 \
-    PRISMA_HIDE_UPDATE_MESSAGE=1
-
-# 验证依赖情况（不影响构建）
-RUN echo "验证动态链接器：" && \
-    ls -l /lib/ld-linux-armhf.so.3 && \
-    echo "验证库依赖关系：" && \
-    ldd /app/prisma-engines/libquery_engine.so.node || echo "ldd 验证失败，继续构建"
-
-# 应用运行相关环境变量
-ENV DATABASE_URL="file:/app/data/db/cashbook.db" \
-    NUXT_APP_VERSION="4.1.3" \
-    NUXT_DATA_PATH="/app/data" \
-    NUXT_AUTH_SECRET="auth123" \
-    NUXT_ADMIN_USERNAME="admin" \
-    NUXT_ADMIN_PASSWORD="fb35e9343a1c095ce1c1d1eb6973dc570953159441c3ee315ecfefb6ed05f4cc" \
-    PORT="9090"
+# 应用配置
+ENV DATABASE_URL="file:/app/data/db/cashbook.db"
+ENV NUXT_APP_VERSION="4.1.3"
+ENV NUXT_DATA_PATH="/app/data"
+ENV NUXT_AUTH_SECRET="auth123"
+ENV NUXT_ADMIN_USERNAME="admin"
+ENV NUXT_ADMIN_PASSWORD="fb35e9343a1c095ce1c1d1eb6973dc570953159441c3ee315ecfefb6ed05f4cc"
+ENV PORT="9090"
 
 VOLUME /app/data/
 EXPOSE 9090
