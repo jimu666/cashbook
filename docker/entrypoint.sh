@@ -11,7 +11,7 @@ export PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
 echo "Prisma binary paths set."
 
-# 运行 Prisma 迁移（无armv7架构的migrate引擎，需要自行生成cashbook.db文件放在default-sqlite下）
+# 运行 Prisma 迁移（无armv7架构的migrate引擎，需要根据prisma文件夹下配置文件自行生成sqlite数据库文件cashbook.db放在default-sqlite下）
 #node_modules/.bin/prisma migrate deploy
 echo "Starting application..."
 
