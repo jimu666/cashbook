@@ -41,7 +41,7 @@ RUN echo "==== Prisma Version Check ====" && \
     echo "==================================="
 
 # 生成 Prisma 客户端（使用本地引擎）
-RUN npx prisma@5.4.1 generate
+RUN node_modules/.bin/prisma generate
 
 # 构建 Nuxt 应用
 RUN npm run build
