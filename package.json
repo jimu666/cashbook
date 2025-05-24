@@ -30,4 +30,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "prisma": "5.4.1"
   }
+  "scripts": {
+    "postinstall": ""
+  }
 }
