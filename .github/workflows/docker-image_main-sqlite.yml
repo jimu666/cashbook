@@ -1,0 +1,40 @@
+name: Build-SQLite-Docker-Only
+
+on:
+  push:
+    tags:
+      - v*.*.*
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  docker_build:
+    runs-on: ubuntu-latest
+    env:
+      CUSTOM_VERSION: 4.15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main-sqlite
+      - name: Set up QEMU (ARM emulation)
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          # 移除有问题的自定义镜像配置
+          # 使用默认buildkit驱动
+
+      - name: Build ARMv7 image
+        run: |
+          docker buildx build \
+            --platform linux/arm/v7 \
+            --tag cashbook:${{ env.CUSTOM_VERSION }}-armv7-sqlite \
+            --output type=docker,dest=./cashbook-armv7.tar \
+            .
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: armv7-docker-image
+          path: ./image-armv7.tar
