@@ -53,7 +53,7 @@ WORKDIR /app
 
 # 数据目录
 RUN mkdir -p /app/data/db
-
+#GitHub Actions 构建时对路径识别有问题，文件夹名后面不能有/，否则复制时找不到文件夹
 # 拷贝 Nuxt 输出
 COPY --from=builder /app/.output /app
 
