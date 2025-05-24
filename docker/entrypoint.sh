@@ -6,7 +6,7 @@ export PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 export PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 export PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 export PRISMA_CLIENT_ENGINE_TYPE=binary
-export PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+export PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-3.0.x
 export PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
 echo "Prisma binary paths set."
