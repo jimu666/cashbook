@@ -15,7 +15,10 @@ COPY prisma-engines/ /app/prisma-engines/
 COPY docker/entrypoint.sh /app/entrypoint.sh
 COPY . .
 
-# 设置环境变量（强制本地引擎）
+# 修复 Prisma 引擎可执行权限
+RUN chmod +x /app/prisma-engines/*
+
+# 设置环境变量（强制使用本地引擎）
 ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
@@ -24,8 +27,11 @@ ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 ENV PRISMA_CLIENT_ENGINE_TYPE=binary
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
-# 输出 Prisma 版本信息
+# 输出 Prisma 版本信息（并再次确保引擎有执行权限）
 RUN echo "==== Prisma Version Check ====" && \
+    chmod +x /app/prisma-engines/schema-engine && \
+    chmod +x /app/prisma-engines/query-engine && \
+    chmod +x /app/prisma-engines/prisma-fmt && \
     node_modules/.bin/prisma -v && \
     echo "Using engines from:" && \
     echo "  QUERY_ENGINE_LIBRARY=$PRISMA_QUERY_ENGINE_LIBRARY" && \
@@ -44,7 +50,7 @@ RUN npm run build
 # ===== 运行阶段 =====
 FROM --platform=linux/arm/v7 node:18-slim AS runner
 
-# 安装运行依赖
+# 安装运行时依赖
 RUN apt-get update && apt-get install -y openssl ca-certificates && apt-get clean
 
 WORKDIR /app
@@ -56,6 +62,9 @@ COPY --from=builder /app/.output/server/node_modules /app/node_modules
 COPY --from=builder /app/prisma /app/prisma
 COPY --from=builder /app/prisma-engines /app/prisma-engines
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
+
+# 设置权限
 RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
 
 # 设置环境变量（确保使用本地引擎）
