@@ -54,7 +54,8 @@ FROM --platform=linux/arm/v7 node:18-slim AS runner
 RUN apt-get update && apt-get install -y openssl ca-certificates && apt-get clean
 
 WORKDIR /app
-
+# 确保目标目录存在
+RUN mkdir -p /app/data/db
 # 拷贝构建产物和运行所需内容
 COPY --from=builder /app/.output /app
 COPY --from=builder /app/.output/server /app/server
@@ -62,6 +63,9 @@ COPY --from=builder /app/.output/server/node_modules /app/node_modules
 COPY --from=builder /app/prisma /app/prisma
 COPY --from=builder /app/prisma-engines /app/prisma-engines
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+# 拷贝预置数据库
+#COPY --from=builder /app/default-sqlite/cashbook.db /app/data/db/cashbook.db #
+COPY default-sqlite/cashbook.db /app/data/db/cashbook.db
 RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
 
 # 设置权限
