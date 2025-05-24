@@ -10,7 +10,7 @@ jobs:
   docker_build:
     runs-on: ubuntu-latest
     env:
-      CUSTOM_VERSION: 4.001
+      CUSTOM_VERSION: 4.15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
           docker buildx build \
             --platform linux/arm/v7 \
             --tag cashbook:${{ env.CUSTOM_VERSION }}-armv7-sqlite \
-            --output type=docker,dest=./image-armv7.tar \
+            --output type=docker,dest=./cashbook-armv7.tar \
             .
 
       - name: Upload Docker image artifact
