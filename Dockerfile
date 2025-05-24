@@ -89,7 +89,7 @@ ENV DATABASE_URL="file:/app/data/db/cashbook.db"
 ENV NUXT_AUTH_SECRET="auth123456"
 #后台登录用户名
 ENV NUXT_ADMIN_USERNAME="admin"
-# 密码是加密后的，加密方法见 server/utils 中的 test.js 或 common.ts,登录页面输入的密码请仍然使用加密前的123456789！
+# 后台密码是加密后的，加密方法见 server/utils 中的 test.js 或 common.ts,后台登录页面输入的密码请仍然使用加密前的123456789！
 ENV NUXT_ADMIN_PASSWORD="c7c7c392e92774ca08a39aefd22efadc9b9019927e8fe3ce38d47332f4fa1231"
 ENV PORT="9090"
 
