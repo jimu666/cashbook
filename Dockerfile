@@ -19,7 +19,7 @@ COPY . .
 RUN chmod +x /app/prisma-engines/*
 
 # 设置环境变量（强制使用本地引擎）
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-3.0.x
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
@@ -70,11 +70,12 @@ RUN chmod +x /app/entrypoint.sh /app/prisma-engines/*
 # 设置环境变量（确保使用本地引擎）
 ENV LD_LIBRARY_PATH=/lib:/usr/lib
 ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/prisma-engines/libquery_engine.so.node
+#ENV PRISMA_MIGRATION_ENGINE_BINARY=/app/prisma-engines/migration-engine #m没有armv7架构迁移引擎
 ENV PRISMA_QUERY_ENGINE_BINARY=/app/prisma-engines/query-engine
 ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/prisma-engines/schema-engine
 ENV PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 ENV PRISMA_CLIENT_ENGINE_TYPE=binary
-ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-1.1.x
+ENV PRISMA_CLI_BINARY_TARGET=linux-arm-openssl-3.0.x
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV PRISMA_HIDE_CHANGELOG=1
 ENV PRISMA_HIDE_UPDATE_MESSAGE=1
