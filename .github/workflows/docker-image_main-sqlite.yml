@@ -37,4 +37,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: armv7-docker-image
-          path: ./image-armv7.tar
+          path: ./cashbook-armv7.tar
