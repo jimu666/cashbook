@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y openssl ca-certificates && apt-get clea
 WORKDIR /app
 
 # 拷贝构建产物和运行所需内容
-COPY --from=builder /app/.output /app/.output
+COPY --from=builder /app/.output /app
 COPY --from=builder /app/.output/server /app/server
 COPY --from=builder /app/.output/server/node_modules /app/node_modules
 COPY --from=builder /app/prisma /app/prisma
