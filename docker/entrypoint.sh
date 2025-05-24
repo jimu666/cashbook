@@ -9,8 +9,8 @@ export PRISMA_FMT_BINARY=/app/prisma-engines/prisma-fmt
 echo "Prisma binary paths set."
 echo "Running Prisma database migration..."
 
-# 使用本地引擎 + 指定版本的 CLI 进行迁移
-npx prisma@5.1.4 migrate deploy
+# 使用项目内本地 CLI 调用 migrate（避免 npx 联网拉包）
+./node_modules/.bin/prisma migrate deploy
 
 echo "Migration completed."
 echo "Starting application..."
